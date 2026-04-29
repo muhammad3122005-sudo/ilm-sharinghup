@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IlmPortal — Ta'lim Portali</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon_192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="IlmPortal"/>
+<meta name="theme-color" content="#1a56db"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#1a56db;--primary-dark:#1342b0;--primary-light:#ebf0ff;
+  --accent:#f97316;--bg:#f0f4fc;--white:#fff;--border:#dde3f0;
+  --text:#1a202c;--muted:#64748b;--danger:#ef4444;--success:#22c55e;
+  --shadow:0 2px 12px rgba(26,86,219,0.09);--shadow-lg:0 8px 32px rgba(26,86,219,0.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+
+/* NAV */
+nav{background:var(--white);border-bottom:3px solid var(--primary);box-shadow:var(--shadow);position:sticky;top:0;z-index:100;}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:66px;}
+.logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;}
+.logo-box{background:var(--primary);color:#fff;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;}
+.logo-text{font-size:1.35rem;font-weight:800;color:var(--primary);}
+.logo-text span{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.btn{padding:0.45rem 1.1rem;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.875rem;font-weight:600;transition:all 0.18s;text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;}
+.btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);}
+.btn-outline:hover{background:var(--primary-light);}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent:hover{background:#ea6c0a;}
+.user-chip{display:flex;align-items:center;gap:0.5rem;background:var(--primary-light);padding:0.35rem 0.9rem 0.35rem 0.4rem;border-radius:999px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;}
+.uname{font-size:0.82rem;font-weight:600;color:var(--primary);}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 60%,#3b82f6 100%);color:#fff;padding:3rem 1.5rem 2.5rem;}
+.hero-inner{max-width:1200px;margin:0 auto;}
+.hero h1{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;margin-bottom:0.5rem;line-height:1.2;}
+.hero p{font-size:1rem;opacity:0.85;margin-bottom:2rem;max-width:560px;}
+.stats-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;}
+.stat-box{background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:0.9rem 1.4rem;min-width:130px;}
+.stat-box .sv{font-size:1.7rem;font-weight:800;}
+.stat-box .sl{font-size:0.75rem;opacity:0.8;margin-top:0.15rem;}
+
+/* SEARCH */
+.search-bar{background:var(--white);border-radius:14px;display:flex;align-items:center;max-width:640px;box-shadow:var(--shadow-lg);overflow:hidden;}
+.search-bar input{flex:1;border:none;outline:none;padding:0.85rem 1rem;font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);}
+.search-bar button{background:var(--accent);color:#fff;border:none;padding:0.85rem 1.4rem;cursor:pointer;font-weight:700;font-size:0.9rem;transition:background 0.18s;}
+.search-bar button:hover{background:#ea6c0a;}
+
+/* FILTERS */
+.filter-wrap{background:var(--white);border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.filter-inner{max-width:1200px;margin:0 auto;padding:0.75rem 1.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;}
+.ftag{padding:0.35rem 1rem;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:0.8rem;font-weight:500;cursor:pointer;transition:all 0.18s;font-family:'Inter',sans-serif;}
+.ftag:hover,.ftag.active{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+.ftag-accent.active,.ftag-accent:hover{border-color:var(--accent);color:var(--accent);background:#fff5ed;}
+.fdiv{width:1px;height:20px;background:var(--border);margin:0 0.25rem;}
+
+/* MAIN */
+.main-wrap{max-width:1200px;margin:0 auto;padding:2rem 1.5rem;}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;}
+.section-hd h2{font-size:1.1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:0.5rem;}
+.section-hd h2::before{content:'';display:block;width:4px;height:18px;background:var(--primary);border-radius:2px;}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all 0.2s;cursor:pointer;}
+.card:hover{box-shadow:var(--shadow-lg);transform:translateY(-3px);border-color:var(--primary);}
+.card-header{background:linear-gradient(135deg,var(--primary) 0%,#3b82f6 100%);padding:1.25rem;position:relative;}
+.card-header.pdf{background:linear-gradient(135deg,#dc2626,#ef4444);}
+.card-header.ppt{background:linear-gradient(135deg,#d97706,#f59e0b);}
+.card-header.mp3{background:linear-gradient(135deg,#16a34a,#22c55e);}
+.card-header.link{background:linear-gradient(135deg,#7c3aed,#8b5cf6);}
+.card-type-icon{font-size:2.2rem;}
+.card-badge{position:absolute;top:0.75rem;right:0.75rem;background:rgba(255,255,255,0.22);color:#fff;font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px;text-transform:uppercase;letter-spacing:0.08em;}
+.card-body{padding:1rem;}
+.card-body h3{font-size:0.9rem;font-weight:700;margin-bottom:0.35rem;line-height:1.4;color:var(--text);}
+.card-body p{font-size:0.78rem;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);}
+.card-lang{font-size:0.72rem;color:var(--muted);background:var(--bg);padding:0.18rem 0.5rem;border-radius:4px;font-weight:500;}
+.card-stats{display:flex;gap:0.6rem;font-size:0.72rem;color:var(--muted);}
+.card-actions{display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;}
+.cbtn{padding:0.35rem 0.8rem;border-radius:7px;border:none;cursor:pointer;font-size:0.75rem;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.18s;}
+.cbtn-primary{background:var(--primary);color:#fff;}
+.cbtn-primary:hover{background:var(--primary-dark);}
+.cbtn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+.cbtn-outline:hover{background:var(--primary-light);}
+.cbtn-like{background:transparent;border:1.5px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.6rem;border-radius:7px;cursor:pointer;font-size:0.75rem;font-family:'Inter',sans-serif;transition:all 0.18s;}
+.cbtn-like:hover,.cbtn-like.liked{border-color:#ef4444;color:#ef4444;background:#fff5f5;}
+
+/* YOUTUBE CARD */
+.yt-thumb{position:relative;width:100%;padding-top:56.25%;background:#000;overflow:hidden;}
+.yt-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.yt-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.yt-play-btn{width:52px;height:52px;background:rgba(255,0,0,0.88);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform 0.18s;}
+.yt-play-btn:hover{transform:scale(1.12);}
+.yt-play-btn svg{fill:#fff;width:22px;height:22px;margin-left:4px;}
+.yt-label{position:absolute;bottom:0.5rem;left:0.5rem;background:rgba(0,0,0,0.72);color:#fff;font-size:0.68rem;padding:0.18rem 0.5rem;border-radius:4px;font-weight:600;}
+
+/* SPOTIFY PLAYER */
+.sp-player{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid var(--primary);box-shadow:0 -4px 24px rgba(26,86,219,0.12);z-index:300;display:none;padding:0.6rem 1.5rem;}
+.sp-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:1rem;}
+.sp-cover{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,#16a34a,#22c55e);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.sp-info{flex:1;min-width:0;}
+.sp-title{font-size:0.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+.sp-sub{font-size:0.72rem;color:var(--muted);}
+.sp-controls{display:flex;align-items:center;gap:0.75rem;}
+.sp-play{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:background 0.18s;}
+.sp-play:hover{background:var(--primary-dark);}
+.sp-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0.25rem;}
+.sp-audio{display:none;}
+.sp-progress{flex:1;min-width:80px;}
+.sp-progress input{width:100%;accent-color:var(--primary);}
+
+/* EMPTY */
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted);}
+.empty-icon{font-size:3.5rem;margin-bottom:1rem;}
+.empty h3{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:0.4rem;}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:18px;width:100%;max-width:420px;padding:2rem;position:relative;box-shadow:var(--shadow-lg);animation:mUp 0.22s ease;}
+@keyframes mUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mc{position:absolute;top:1rem;right:1rem;background:var(--bg);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;color:var(--muted);display:flex;align-items:center;justify-content:center;}
+.modal h2{font-size:1.3rem;font-weight:800;color:var(--primary);margin-bottom:1.5rem;}
+.fg{margin-bottom:1rem;}
+.fg label{display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;}
+.fg input{width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.9rem;outline:none;transition:border 0.18s;}
+.fg input:focus{border-color:var(--primary);}
+.err{color:var(--danger);font-size:0.8rem;margin-top:0.4rem;}
+
+/* FEEDBACK */
+.fb-section{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:3rem 1.5rem;margin-top:2rem;}
+.fb-inner{max-width:600px;margin:0 auto;text-align:center;}
+.fb-inner h2{font-size:1.5rem;font-weight:800;margin-bottom:0.5rem;}
+.fb-inner p{opacity:0.85;margin-bottom:1.5rem;font-size:0.9rem;}
+.fb-form{background:rgba(255,255,255,0.12);border-radius:14px;padding:1.5rem;}
+.fb-form input,.fb-form textarea{width:100%;padding:0.65rem 0.9rem;border:1.5px solid rgba(255,255,255,0.3);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-family:'Inter',sans-serif;font-size:0.9rem;outline:none;margin-bottom:0.75rem;}
+.fb-form input::placeholder,.fb-form textarea::placeholder{color:rgba(255,255,255,0.6);}
+.fb-form textarea{resize:vertical;min-height:90px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:0.7rem 1.4rem;border-radius:10px;font-size:0.85rem;z-index:999;display:none;font-weight:500;box-shadow:var(--shadow-lg);}
+.toast.show{display:block;}
+
+/* VIEW MODAL */
+.view-modal{max-width:92vw;width:860px;max-height:88vh;display:flex;flex-direction:column;}
+.view-modal iframe{flex:1;border:none;border-radius:8px;min-height:60vh;}
+
+footer{background:var(--primary-dark);color:rgba(255,255,255,0.7);text-align:center;padding:1.5rem;font-size:0.8rem;}
+footer strong{color:#fff;}
+
+@media(max-width:640px){
+  .nav-inner{padding:0 1rem;}
+  .hero{padding:2rem 1rem 2rem;}
+  .stats-row{gap:0.6rem;}
+  .stat-box{padding:0.7rem 1rem;min-width:100px;}
+  .main-wrap{padding:1.25rem 1rem;}
+  .filter-inner{padding:0.6rem 1rem;}
+  .sp-player{padding:0.6rem 1rem;}
+  .sp-progress{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#">
+      <div class="logo-box">I</div>
+      <div class="logo-text">Ilm<span>Portal</span></div>
+    </a>
+    <div class="nav-right" id="navRight">
+      <button class="btn btn-outline" onclick="openModal('loginModal')">🔑 Kirish</button>
+      <button class="btn btn-primary" onclick="openModal('regModal')">Ro'yxat</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <h1>📚 O'zbek ta'lim resurslari<br/>bir platformada</h1>
+    <p>PDF kitoblar, slaytlar, qo'shiqlar va video darsliklar — barchasi bepul</p>
+    <div class="stats-row">
+      <div class="stat-box"><div class="sv" id="hTot">0</div><div class="sl">ta Resurs</div></div>
+      <div class="stat-box"><div class="sv" id="hViews">0</div><div class="sl">ta Ko'rish</div></div>
+      <div class="stat-box"><div class="sv" id="hUsers">0</div><div class="sl">ta Foydalanuvchi</div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Kitob, mavzu yoki qo'shiq qidiring..." oninput="handleSearch()"/>
+      <button onclick="handleSearch()">🔍 Qidirish</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-wrap">
+  <div class="filter-inner">
+    <button class="ftag active" data-type="" onclick="setType(this,'')">Hammasi</button>
+    <button class="ftag" data-type="pdf" onclick="setType(this,'pdf')">📄 PDF</button>
+    <button class="ftag" data-type="ppt" onclick="setType(this,'ppt')">📊 PPT</button>
+    <button class="ftag" data-type="mp3" onclick="setType(this,'mp3')">🎵 Musiqa</button>
+    <button class="ftag" data-type="link" onclick="setType(this,'link')">▶ Video</button>
+    <div class="fdiv"></div>
+    <button class="ftag active" data-lang="" onclick="setLang(this,'')">Barcha til</button>
+    <button class="ftag" data-lang="uz" onclick="setLang(this,'uz')">🇺🇿 O'zbek</button>
+    <button class="ftag" data-lang="en" onclick="setLang(this,'en')">🇬🇧 English</button>
+    <button class="ftag" data-lang="ru" onclick="setLang(this,'ru')">🇷🇺 Rus</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="main-wrap">
+  <div class="section-hd">
+    <h2>Materiallar</h2>
+  </div>
+  <div class="grid" id="contentGrid">
+    <div class="empty"><div class="empty-icon">⏳</div><h3>Yuklanmoqda...</h3></div>
+  </div>
+</div>
+
+<!-- FEEDBACK -->
+<div class="fb-section">
+  <div class="fb-inner">
+    <h2>💬 Taklif yuboring</h2>
+    <p>Qanday content qo'shishimni xohlaysiz? Fikr va takliflaringizni yozing.</p>
+    <div class="fb-form">
+      <input type="text" id="fbName" placeholder="Ismingiz (ixtiyoriy)"/>
+      <textarea id="fbText" placeholder="Xabaringiz..."></textarea>
+      <button class="btn btn-accent" style="width:100%;" onclick="submitFb()">Yuborish →</button>
+      <div id="fbMsg" style="color:#fff;font-size:0.82rem;margin-top:0.5rem;text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
+<footer><strong>IlmPortal</strong> © 2025 — Ta'lim hech qachon to'xtamaydi</footer>
+
+<!-- SPOTIFY PLAYER -->
+<div class="sp-player" id="spPlayer">
+  <div class="sp-inner">
+    <div class="sp-cover" id="spCover">🎵</div>
+    <div class="sp-info">
+      <div class="sp-title" id="spTitle">—</div>
+      <div class="sp-sub">IlmPortal Music</div>
+    </div>
+    <div class="sp-progress">
+      <input type="range" id="spRange" min="0" max="100" value="0" oninput="seekAudio()"/>
+    </div>
+    <div class="sp-controls">
+      <button class="sp-play" id="spPlayBtn" onclick="togglePlay()">▶</button>
+      <button class="sp-close" onclick="closePlayer()">✕</button>
+    </div>
+  </div>
+  <audio id="spAudio" onended="closePlayer()" ontimeupdate="updateProgress()"></audio>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div class="overlay" id="loginModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="mc" onclick="closeModal('loginModal')">✕</button>
+    <h2>🔑 Kirish</h2>
+    <div class="fg"><label>Email</label><input type="email" id="liEmail" placeholder="email@example.com"/></div>
+    <div class="fg"><label>Parol</label><input type="password" id="liPass" placeholder="Parol"/></div>
+    <div id="liErr" class="err"></div>
+    <div style="text-align:right;margin-top:0.25rem;">
+      <a href="#" style="color:var(--muted);font-size:0.78rem;" onclick="switchModal('loginModal','forgotModal')">Parolni unutdim?</a>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.75rem;padding:0.7rem;" onclick="doLogin()">Kirish</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.82rem;color:var(--muted);">
+      Akkaunt yo'qmi? <a href="#" style="color:var(--primary);font-weight:600;" onclick="switchModal('loginModal','regModal')">Ro'yxatdan o'ting</a>
+    </p>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="overlay" id="regModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="mc" onclick="closeModal('regModal')">✕</button>
+    <h2>📝 Ro'yxatdan o'tish</h2>
+    <div class="fg"><label>Ism</label><input type="text" id="reName" placeholder="To'liq ismingiz"/></div>
+    <div class="fg"><label>Email</label><input type="email" id="reEmail" placeholder="email@example.com"/></div>
+    <div class="fg"><label>Parol</label><input type="password" id="rePass" placeholder="Kamida 6 belgi"/></div>
+    <div id="reErr" class="err"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.75rem;padding:0.7rem;" onclick="doReg()">Ro'yxatdan o'tish</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.82rem;color:var(--muted);">
+      Akkaunt bormi? <a href="#" style="color:var(--primary);font-weight:600;" onclick="switchModal('regModal','loginModal')">Kirish</a>
+    </p>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD MODAL -->
+<div class="overlay" id="forgotModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="mc" onclick="closeModal('forgotModal')">✕</button>
+    <h2>🔒 Parolni tiklash</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1.25rem;">Emailingizni kiriting — parol tiklash havolasi yuboramiz.</p>
+    <div class="fg"><label>Email</label><input type="email" id="fgEmail" placeholder="email@example.com"/></div>
+    <div id="fgMsg" style="font-size:0.82rem;margin-top:0.25rem;"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.75rem;padding:0.7rem;" onclick="doForgot()">Yuborish</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.82rem;color:var(--muted);">
+      <a href="#" style="color:var(--primary);font-weight:600;" onclick="switchModal('forgotModal','loginModal')">← Kirishga qaytish</a>
+    </p>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="overlay" id="viewModal">
+  <div class="modal view-modal">
+    <button class="mc" onclick="closeModal('viewModal')">✕</button>
+    <h2 id="viewTitle" style="font-size:1rem;margin-bottom:1rem;"></h2>
+    <iframe id="viewFrame" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script>
+var SURL = "https://rdjaoaacupvuzzrludgw.supabase.co";
+var SKEY = "sb_publishable_7UfJWH3n2wqAk51Ngbk5vw_cbDkWVOx";
+var sb = supabase.createClient(SURL, SKEY);
+
+var me = null;
+var myProfile = null;
+var allItems = [];
+var tFilter = "";
+var lFilter = "";
+var q = "";
+
+async function init() {
+  var s = await sb.auth.getSession();
+  if (s.data.session) {
+    me = s.data.session.user;
+    var p = await sb.from("profiles").select("*").eq("id", me.id).single();
+    myProfile = p.data;
+    updateNav();
+  }
+  loadStats();
+  loadContents();
+}
+
+async function loadStats() {
+  var c = await sb.from("contents").select("views");
+  var u = await sb.from("profiles").select("id", { count: "exact" });
+  var items = c.data || [];
+  document.getElementById("hTot").textContent = items.length;
+  document.getElementById("hViews").textContent = items.reduce(function(s,x){return s+(x.views||0);},0);
+  document.getElementById("hUsers").textContent = u.count || 0;
+}
+
+function updateNav() {
+  var nav = document.getElementById("navRight");
+  var name = myProfile && myProfile.full_name ? myProfile.full_name : me.email.split("@")[0];
+  var isAdmin = myProfile && (myProfile.role === "admin" || myProfile.role === "creator");
+  var html = '<div class="user-chip"><div class="uavatar">' + name[0].toUpperCase() + '</div><span class="uname">' + name + '</span></div>';
+  if (isAdmin) html += '<a href="admin.html" class="btn btn-accent">⚙️ Admin</a>';
+  html += '<button class="btn btn-outline" onclick="doLogout()">Chiqish</button>';
+  nav.innerHTML = html;
+}
+
+async function doForgot() {
+  var email = document.getElementById("fgEmail").value.trim();
+  var msg = document.getElementById("fgMsg");
+  msg.style.color = "var(--danger)";
+  if (!email) { msg.textContent = "Email kiriting"; return; }
+  var r = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + "/index.html"
+  });
+  if (r.error) { msg.textContent = r.error.message; return; }
+  msg.style.color = "var(--success)";
+  msg.textContent = "✅ Email yuborildi! Pochrangizni tekshiring.";
+  document.getElementById("fgEmail").value = "";
+}
+
+async function doLogin() {
+  var email = document.getElementById("liEmail").value.trim();
+  var pass = document.getElementById("liPass").value;
+  var err = document.getElementById("liErr");
+  err.textContent = "";
+  var r = await sb.auth.signInWithPassword({ email: email, password: pass });
+  if (r.error) { err.textContent = "Email yoki parol xato"; return; }
+  me = r.data.user;
+  var p = await sb.from("profiles").select("*").eq("id", me.id).single();
+  myProfile = p.data;
+  updateNav();
+  closeModal("loginModal");
+  toast("Xush kelibsiz, " + (myProfile && myProfile.full_name ? myProfile.full_name : me.email.split("@")[0]) + "!");
+}
+
+async function doReg() {
+  var name = document.getElementById("reName").value.trim();
+  var email = document.getElementById("reEmail").value.trim();
+  var pass = document.getElementById("rePass").value;
+  var err = document.getElementById("reErr");
+  err.textContent = "";
+  if (!name || !email || !pass) { err.textContent = "Barcha maydonlarni to'ldiring"; return; }
+  if (pass.length < 6) { err.textContent = "Parol kamida 6 belgi"; return; }
+  var r = await sb.auth.signUp({ email: email, password: pass });
+  if (r.error) { err.textContent = r.error.message; return; }
+  await sb.from("profiles").insert({ id: r.data.user.id, full_name: name, email: email, role: "user" });
+  me = r.data.user;
+  myProfile = { full_name: name, email: email, role: "user" };
+  updateNav();
+  closeModal("regModal");
+  toast("Xush kelibsiz, " + name + "! 🎉");
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  me = null; myProfile = null;
+  document.getElementById("navRight").innerHTML =
+    '<button class="btn btn-outline" onclick="openModal(\'loginModal\')">🔑 Kirish</button>' +
+    '<button class="btn btn-primary" onclick="openModal(\'regModal\')">Ro\'yxat</button>';
+  toast("Chiqildi");
+}
+
+async function loadContents() {
+  var r = await sb.from("contents").select("*").order("created_at", { ascending: false });
+  if (r.error) {
+    document.getElementById("contentGrid").innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>' + r.error.message + "</h3></div>";
+    return;
+  }
+  allItems = r.data || [];
+  render();
+}
+
+function render() {
+  var grid = document.getElementById("contentGrid");
+  var items = allItems.slice();
+  if (tFilter) items = items.filter(function(c){return c.type===tFilter;});
+  if (lFilter) items = items.filter(function(c){return c.language===lFilter;});
+  if (q) items = items.filter(function(c){
+    return c.title.toLowerCase().indexOf(q)>=0 ||
+      (c.description||"").toLowerCase().indexOf(q)>=0 ||
+      (c.tags||"").toLowerCase().indexOf(q)>=0;
+  });
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><h3>Hech narsa topilmadi</h3></div>';
+    return;
+  }
+  var html = "";
+  for (var i=0;i<items.length;i++) html += buildCard(items[i]);
+  grid.innerHTML = html;
+}
+
+function getYtId(url) {
+  var m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function buildCard(c) {
+  var langs = {uz:"🇺🇿 O'zbek", en:"🇬🇧 English", ru:"🇷🇺 Rus"};
+  var body = "";
+
+  if (c.type === "link") {
+    var ytId = getYtId(c.file_url || "");
+    var thumb = ytId ? "https://img.youtube.com/vi/" + ytId + "/mqdefault.jpg" : "";
+    body = '<div class="yt-thumb">' +
+      (thumb ? '<img src="' + thumb + '" alt="' + c.title + '" onerror="this.style.display=\'none\'"/>' : '<div style="position:absolute;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:2.5rem;">▶</div>') +
+      '<div class="yt-play"><div class="yt-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>' +
+      '<div class="yt-label">YouTube</div></div>' +
+      '<div class="card-body"><h3>' + c.title + '</h3><p>' + (c.description||"") + '</p>' +
+      '<div class="card-meta"><span class="card-lang">' + (langs[c.language]||c.language||"") + '</span>' +
+      '<div class="card-stats"><span>👁 '+(c.views||0)+'</span><span>❤️ '+(c.likes||0)+'</span></div></div>' +
+      '<div class="card-actions">' +
+      '<button class="cbtn cbtn-primary" onclick="goYt(\'' + c.file_url + '\',' + c.id + ')">▶ YouTube da ko\'rish</button>' +
+      '<button class="cbtn-like" onclick="likeIt('+c.id+',this)">❤ Like</button>' +
+      '</div></div>';
+    return '<div class="card">' + body + '</div>';
+  }
+
+  var headerClass = c.type === "pdf" ? "pdf" : c.type === "ppt" ? "ppt" : c.type === "mp3" ? "mp3" : "";
+  var icon = c.type==="pdf"?"📄":c.type==="ppt"?"📊":c.type==="mp3"?"🎵":"📁";
+  var label = c.type==="pdf"?"PDF":c.type==="ppt"?"PPT":c.type==="mp3"?"MP3":"Fayl";
+
+  var actions = "";
+  if (c.type === "mp3") {
+    actions = '<button class="cbtn cbtn-primary" onclick="playMp3(\'' + c.file_url + '\',\'' + c.title.replace(/'/g,"") + '\')">▶ Tinglash</button>' +
+      '<button class="cbtn cbtn-outline" onclick="dlFile(\'' + c.file_url + '\',\'' + c.title.replace(/'/g,"") + '\',' + c.id + ')">⬇ Yuklash</button>';
+  } else {
+    actions = '<button class="cbtn cbtn-primary" onclick="viewFile(\'' + c.file_url + '\',\'' + c.title.replace(/'/g,"") + '\',' + c.id + ')">👁 Ko\'rish</button>' +
+      '<button class="cbtn cbtn-outline" onclick="dlFile(\'' + c.file_url + '\',\'' + c.title.replace(/'/g,"") + '\',' + c.id + ')">⬇ Yuklash</button>';
+  }
+
+  return '<div class="card">' +
+    '<div class="card-header ' + headerClass + '"><div class="card-type-icon">' + icon + '</div><span class="card-badge">' + label + '</span></div>' +
+    '<div class="card-body"><h3>' + c.title + '</h3><p>' + (c.description||"") + '</p>' +
+    '<div class="card-meta"><span class="card-lang">' + (langs[c.language]||c.language||"") + '</span>' +
+    '<div class="card-stats"><span>👁 '+(c.views||0)+'</span><span>❤️ '+(c.likes||0)+'</span></div></div>' +
+    '<div class="card-actions">' + actions +
+    '<button class="cbtn-like" onclick="likeIt('+c.id+',this)">❤ Like</button>' +
+    '</div></div></div>';
+}
+
+function goYt(url, id) {
+  sb.rpc("increment_views", { content_id: id });
+  window.open(url, "_blank");
+}
+
+function playMp3(url, title) {
+  var audio = document.getElementById("spAudio");
+  var player = document.getElementById("spPlayer");
+  document.getElementById("spTitle").textContent = title;
+  audio.src = url;
+  audio.play();
+  document.getElementById("spPlayBtn").textContent = "⏸";
+  player.style.display = "block";
+  document.body.style.paddingBottom = "72px";
+}
+
+function togglePlay() {
+  var audio = document.getElementById("spAudio");
+  var btn = document.getElementById("spPlayBtn");
+  if (audio.paused) { audio.play(); btn.textContent = "⏸"; }
+  else { audio.pause(); btn.textContent = "▶"; }
+}
+
+function closePlayer() {
+  var audio = document.getElementById("spAudio");
+  audio.pause(); audio.src = "";
+  document.getElementById("spPlayer").style.display = "none";
+  document.body.style.paddingBottom = "0";
+}
+
+function updateProgress() {
+  var audio = document.getElementById("spAudio");
+  if (audio.duration) {
+    document.getElementById("spRange").value = (audio.currentTime / audio.duration) * 100;
+  }
+}
+
+function seekAudio() {
+  var audio = document.getElementById("spAudio");
+  if (audio.duration) audio.currentTime = (document.getElementById("spRange").value / 100) * audio.duration;
+}
+
+function viewFile(url, title, id) {
+  sb.rpc("increment_views", { content_id: id });
+  document.getElementById("viewTitle").textContent = title;
+  document.getElementById("viewFrame").src = "https://docs.google.com/viewer?url=" + encodeURIComponent(url) + "&embedded=true";
+  openModal("viewModal");
+}
+
+function dlFile(url, title, id) {
+  if (!me) { toast("Yuklash uchun ro'yxatdan o'ting"); openModal("regModal"); return; }
+  sb.rpc("increment_views", { content_id: id });
+  var a = document.createElement("a");
+  a.href = url; a.download = title; a.target = "_blank"; a.click();
+}
+
+async function likeIt(id, btn) {
+  if (!me) { toast("Like bosish uchun kiring"); return; }
+  btn.classList.toggle("liked");
+  await sb.rpc("toggle_like", { content_id: id, user_uuid: me.id });
+  loadContents();
+}
+
+function setType(btn, val) {
+  tFilter = val;
+  document.querySelectorAll("[data-type]").forEach(function(b){b.classList.remove("active");});
+  btn.classList.add("active");
+  render();
+}
+function setLang(btn, val) {
+  lFilter = val;
+  document.querySelectorAll("[data-lang]").forEach(function(b){b.classList.remove("active");});
+  btn.classList.add("active");
+  render();
+}
+function handleSearch() {
+  q = document.getElementById("searchInput").value.trim().toLowerCase();
+  render();
+}
+
+async function submitFb() {
+  var name = document.getElementById("fbName").value.trim();
+  var text = document.getElementById("fbText").value.trim();
+  var msg = document.getElementById("fbMsg");
+  if (!text) { msg.textContent = "Xabar yozing"; return; }
+  var r = await sb.from("feedbacks").insert({ name: name, message: text });
+  if (r.error) { msg.textContent = "Xatolik"; return; }
+  document.getElementById("fbText").value = "";
+  msg.textContent = "✅ Rahmat! Xabaringiz yuborildi.";
+  setTimeout(function(){msg.textContent="";},3000);
+}
+
+function openModal(id){document.getElementById(id).classList.add("open");}
+function closeModal(id){document.getElementById(id).classList.remove("open");}
+function switchModal(f,t){closeModal(f);openModal(t);}
+document.querySelectorAll(".overlay").forEach(function(el){
+  el.addEventListener("click",function(e){if(e.target===el)el.classList.remove("open");});
+});
+
+function toast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},2500);
+}
+
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
